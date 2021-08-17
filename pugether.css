@@ -1,0 +1,133 @@
+/*========動畫同步========*/
+#imgset_gif_sync { position:absolute; z-index:-9; left:10px; top:10px; width:1px; height:1px; overflow:hidden; }
+#imgset_gif_sync img { position:absolute; left:0; top:0; width:1px; height:1px; }
+
+/*========主要========*/
+#pugether {
+	position:fixed; z-index:10000; left:calc(50% - 378px); top:calc(50% - 263px);
+	color:#333; outline:none;
+}
+
+/*========左右開關========*/
+#pugether .switch {
+	position:absolute; top:20px;
+	width:30px; height:calc(100% - 40px); background:#FF675D;
+}
+#pgt_chat_outer_switch { left:-30px; border-radius:15px 0 0 15px; transition:left .6s; }
+#pgt_setup_outer_switch { right:-30px; border-radius:0 15px 15px 0; transition:right .6s; }
+
+/*========通用========*/
+#pugether button { line-height:26px; margin:2px 4px; padding:0 10px; background:#FF675D; }
+#pgt_setup input { width:120px; line-height:20px; margin:2px 4px; border-color:#FF675D; }
+.pgt_circle { width:25px; height:25px; border-radius:50%; background-color:#FFF; filter:drop-shadow(2px 2px 0 #FF675D); cursor:pointer; }
+.pgt_circle:before { content:""; height:100%; width:100%; background-color:#FF675D; display:block; }
+.pgt_circle[val="false"] { background-color:#AAA; }
+.pgt_switch_track { position:relative; width:70px; line-height:26px; margin:2px 4px; padding:0 10px; border-radius:13px; background:#FFF; display:inline-block; }
+.pgt_switch_track:before { content:"on"; margin-left:2px; color:#FF675D; }
+.pgt_switch_track:after { content:"off"; margin-left:12px; color:#AAA; }
+.pgt_switch_thumb { position:absolute; z-index:1; left:0; top:0; width:36px; height:26px; border-radius:13px; background:#FF675D; transition:left .6s; }
+[val="true"] .pgt_switch_thumb { left:34px; }
+
+/*========主畫面操作========*/
+#pgt_window_control {
+	position:absolute; z-index:100; left:0; top:0; max-height:0; padding:0 7px;
+	background:#FF675D; border-radius:10px; transition:max-height .6s;
+	-webkit-user-select:none; -moz-user-select:none;
+}
+#pugether[data-mini="true"] #pgt_window_control { max-height:70px; }
+#pgt_window_control div { float:left; margin:7px 5px; }
+#pgt_window_control #pgt_window_move { cursor:move; }
+
+/*========場景區========*/
+#pgt_scene { position:relative; overflow:hidden; z-index:10; }
+#pgt_screen_box {
+	position:relative; width:757px; height:527px; min-width:460px; min-height:320px; resize:both;
+	background:#aaa; border-radius:10px; border:solid #aaa; border-width:10px 3px 3px 10px; overflow:scroll;
+}
+#pgt_screen_box::-webkit-resizer { display:none; }
+#pgt_screen { position:relative; width:100%; height:100%; background:#aaa; }
+
+/*========畫面操作區========*/
+#pgt_control { position:absolute; z-index:100; right:15px; top:0; max-height:0; padding:0 7px; }
+#pgt_control div { float:left; margin:7px 5px; }
+
+/*========玩家操作區========*/
+#pgt_action {
+	position:absolute; bottom:25px; right:25px; height:100px; width:100px;
+	filter:drop-shadow(2px 2px 0 #FF675D);
+}
+#pgt_action::before {
+	content:""; position:absolute; z-index:-1; width:100%; height:100%;
+	background-color:#FFF; display:block;
+}
+#pgt_arrow div { float:left; width:50px; height:50px; }
+#pgt_action .pgt_circle { position:absolute; filter:none; }
+
+#pgt_can_move { right:100%; width:60px; line-height:25px; border-radius:25px; text-align: center; color:#AAA; }
+#pgt_can_move:before { display:none; }
+#pgt_climb { top:50px; right:100%; }
+
+/*========玩家與物件========*/
+.square { position:absolute; width:127px; height:63px; }
+#pgt_oneself { background-image:url(https://imgur.com/JWHTgqc.png); }
+
+.pgt_sq_say { display:none; }
+.pgt_sq_img { position:absolute; }
+
+/*========對話區========*/
+#pgt_chat_outer {
+	position:absolute; left:0; top:20px; width:300px; height:calc(100% - 40px);
+	background:#FFEBD0; transition:left .6s;
+}
+#pgt_chat { height:calc(100% - 110px); margin:10px; padding-right:10px; overflow:auto; }
+.pgt_chat_log { position:relative; margin:20px 0; }
+.pgt_log_name { width:127px; padding:0 4px; border-radius:3px; border:1px solid #AAA; background:#FFF; }
+.pgt_log_text { margin-top:10px; padding:5px 10px; background:#FFF; }
+
+/*========設定區========*/
+#pgt_setup_outer {
+	position:absolute; right:0; top:20px; width:300px; height:calc(100% - 40px);
+	background:#FFEBD0;  transition:right .6s;
+}
+#pgt_setup_list { height:calc(100% - 20px); margin:10px; padding-right:10px; overflow:auto; }
+#pgt_setup > div { margin:5px 0; min-height:30px; }
+#pgt_setup span { width:68px; line-height:30px; font-size:14px; color:#FF675D; display:inline-block; }
+#pgt_setup button { float:right; }
+#pgt_setup hr { background:#FF675D; border:0; height:1px; margin:15px 5px; }
+#pgt_set_imgset div { margin:5px 0; }
+
+/*========輸入區========*/
+#pgt_chat_input {
+	position:absolute; z-index:80; bottom:30px; left:20px; width:300px; padding:10px;
+	border-radius:5px; background:#FFEBD0;  transition:left .6s, bottom .6s;
+}
+#pgt_chat_outer[style] ~ #pgt_chat_input { left:-300px; bottom:20px; }
+#pugether[data-mini="true"] #pgt_chat_input { left:0; bottom:10px; }
+#pgt_chat_text {
+	width:calc(100% - 35px); height:68px; padding:5px; border:2px solid #FF675D; border-radius:5px;
+	overflow:auto; outline:none;
+}
+#pgt_chat_save { position:absolute; right:10px; bottom:51px; }
+#pgt_chat_send { position:absolute; right:10px; bottom:12px; }
+
+/*========浮窗========*/
+.pgt_pop {
+	position:absolute; z-index:80; top:0; width:100%; height:100%; background:#000A; border-radius:10px;
+	overflow:hidden; display:flex; justify-content:center; align-items:center;
+}
+.pgt_pop_view { height:auto; padding:5px 10px; border-radius:3px; background:#FFEBD0; }
+.pgt_pop_view > div { margin:10px 5px; display:flex; justify-content:center; align-items:center; }
+
+/*========滾輪========*/
+#pugether ::-webkit-scrollbar { width:11px; height:11px; }
+#pugether ::-webkit-scrollbar-track { background-color:#FF675D; background-clip:padding-box; border:solid #0000; border-radius:10px; }
+#pugether ::-webkit-scrollbar-track:vertical { border-width:1px 4px; }
+#pugether ::-webkit-scrollbar-track:horizontal { border-width:4px 1px; }
+#pugether ::-webkit-scrollbar-thumb { background-color:#FFF; border-radius:10px; }
+#pugether ::-webkit-scrollbar-thumb:vertical { border-width:0 0; }
+#pugether ::-webkit-scrollbar-thumb:horizontal { border-width:0 0; }
+#pugether ::-webkit-scrollbar-corner { background-color:#FF675D; border-radius:50%; border:3px solid #0000; background-clip:padding-box; }
+
+/*========圖案========*/
+#pgt_action::before { -webkit-mask-box-image:url(https://imgur.com/yiAvwAj.png); }
+#pgt_climb::before { -webkit-mask-box-image:url(https://imgur.com/KYmy8XI.png); }

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+	<head>
+		<title>場景製造機</title>
+		<meta charset="utf-8">
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<style>
+			#screen_view { background:#CCC; padding:11px 0 0 11px; border-radius:5px; position:relative; float:left; overflow:hidden; }
+			#screen_box { min-height:130px; min-width:170px; width:600px; height:450px; overflow:scroll; resize:auto; }
+			#screen { position:relative; }
+			#test_player { width:127px; height:207px; background:url(https://imgur.com/Ipfy5Ol.png); position:absolute; }
+			.item_sq { position:absolute; width:127px; height:63px; }
+			.item_sq div { position:absolute; }
+			
+			#screen_box::-webkit-scrollbar { width:11px; height:11px; }
+			#screen_box::-webkit-scrollbar-track { background-color:#FF574D; background-clip:padding-box; border:solid #0000; border-radius:10px; }
+			#screen_box::-webkit-scrollbar-track:vertical { border-width:1px 4px; }
+			#screen_box::-webkit-scrollbar-track:horizontal { border-width:4px 1px; }
+			#screen_box::-webkit-scrollbar-thumb { background-color:#FFF; border-radius:10px; }
+			#screen_box::-webkit-scrollbar-thumb:vertical { border-width:0 0; }
+			#screen_box::-webkit-scrollbar-thumb:horizontal { border-width:0 0; }
+			#screen_box::-webkit-scrollbar-corner { background-color:#FF574D; border-radius:50%; border:3px solid #0000; background-clip:padding-box; }
+			#screen_box::-webkit-resizer { display:none; }
+			
+			#control { position:absolute; bottom:25px; right:25px; filter:drop-shadow(2px 2px 0 #FF574D); }
+			#move_button { height:100px; width:100px; background-image:url(https://imgur.com/yiAvwAj.png); }
+			#move_button div { height:50px; width:50px; float:left; }
+			#climb, #sit_down { background-color:#FFF; border-radius:50%; height:30px; width:30px; position:absolute; }
+			#climb { left:-40px; bottom:10px; } #sit_down { left:-40px; bottom:60px; }
+			#climb::before, #sit_down::before { content:""; display:block; height:30px; width:30px; background-color:#FF574D; }
+			#climb::before { -webkit-mask-box-image:url(https://imgur.com/KYmy8XI.png); }
+			#climb::before { mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAACXBIWXMAAAsSAAALEgHS3X78AAAAUElEQVRIiWNgGAWjYCSC/1BMVfVMRBhCLsCrl5DFNAMDZjELCWopCXYMMBrU+AAjkeqIipKRF9RDIo5HsxNFYDQ7DRqLiQ1eausdBaNgCAIA+O4KJTNkjNgAAAAASUVORK5CYII=); }
+			#sit_down::before { -webkit-mask-box-image:url(https://imgur.com/Ka3sJAA.png); }
+			#sit_down::before { mask-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAACXBIWXMAAAsSAAALEgHS3X78AAAAhUlEQVRIie1VQQ6AMAxC///neTPGQy2UaWrGdRmMrqXAwt+xFe6OCo8iPIKzNB8rHIlSnDspbAPjOOM2zfuZ4xalBozN1WacIvFKGEkPYLr9hCsyaS5nqSk+9zily95mjgHTLM/K6kfubKkVl+Ed9x/bk8sSk1coji3R2GYf392+uhgWJBw0xxEhO5zwugAAAABJRU5ErkJggg==); }
+
+			#content { margin-left:10px; float:left; }
+			.content_button { display:inline-block; text-align:center; margin:10px 5px 20px; padding:5px; background:#FFF; filter:drop-shadow(2px 2px 0 #FF574D); }
+			
+			input { margin:0 5px; }
+			input[type="number"] { width:35px; }
+			span:not([class]), #items_input span, .delete_t { display:inline-block; width:20px; text-align:center; }
+			#items_input div:not(#create_item) { margin-left:20px; }
+			#items_input .selected { background:#CCC; }
+			#items_input span, .delete_t { background:#FFF; font-size:13px; line-height:20px; border-radius:5px; margin-right:5px; position:relative; top:-1px; }
+			#create_item, #create_terrain { border:2px dashed #EEE; background:#CCC; cursor:pointer; display:inline-block; width:18px; text-align:center; }
+			
+			#screen_cid_limit, #screen_role_limit { position:relative; }
+			#screen_cid_limit:after, #screen_role_limit:after {
+				position:absolute; background:#FFF; left:0; top:30px; filter:drop-shadow(0 0 5px #000A);
+				max-height:0; padding:0 10px; transition:.6s; overflow:hidden; max-width:100%; z-index:1;
+			}
+			#screen_cid_limit:hover:after, #screen_role_limit:hover:after { max-height:100px; padding:10px; }
+			#screen_cid_limit:after { content:"限制cid：使用半形空格隔開。例：2 18 9，表示此圖組有三個人可以使用。"; }
+			#screen_role_limit:after { content:"限制身分：使用半形空格隔開。例：身分1 身分2 身分3，表示有這三種身分任一種的人皆可使用。"; }
+			
+			#item_input { margin-top:20px; }
+			#item_terrain { max-height:300px; overflow:auto; }
+			#item_terrain div:not(#create_terrain) { margin-left:20px; }
+			#item_terrain select { margin-right:5px; }
+		</style>
+	</head>
+	<body style="background:#AAA;">
+		<div id="screen_view">
+			<div id="screen_box">
+				<div id="screen">
+					<div id="test_player"></div>
+				</div>
+			</div>
+			<div id="control">
+				<div id="move_button">
+					<div data-d="2" title="西"></div>
+					<div data-d="3" title="北"></div>
+					<div data-d="1" title="南"></div>
+					<div data-d="0" title="東"></div>
+				</div>
+				<div id="climb"></div>
+				<div id="sit_down"></div>
+			</div>
+		</div>
+		<div id="content">
+			<div id="content_button">
+				<div class="content_button" id="screen_upload">讀取場景</div>
+				<div class="content_button" id="screen_download">儲存場景</div>
+				<div class="content_button" id="reset_player_pos">回原點</div>
+			</div>
+			<div id="screen_input">
+				<div id="screen_name">場景名稱：<input/></div>
+				<div id="screen_img">背景圖片：<input/></div>
+				<div id="size">場景大小：<span>l</span><input class="l" type="number"/><span>w</span><input class="w" type="number"/><span>h</span><input class="h" type="number"/></div>
+				<div id="offset">原點偏移：<span>r</span><input class="r" type="number"/><span>c</span><input class="c" type="number"/><span>a</span><input class="a" type="number"/></div>
+				<div id="screen_cid_limit">限制cid：<input/></div>
+				<div id="screen_role_limit">限制身分：<input/></div>
+				<div id="items_input">
+					物件列表：<div id="create_item">+</div>
+				</div>
+			</div>
+			<div id="item_input">
+				物件編輯：
+				<div id="item_id">名稱：<input/></div>
+				<div id="item_img">圖片：<input/></div>
+				<div id="item_img_origin">圖片偏移：left<input class="left" type="number"/>bottom<input class="bottom" type="number"/></div>
+				<div id="item_pos">位置：<span>r</span><input class="r" type="number"/><span>c</span><input class="c" type="number"/><span>a</span><input class="a" type="number"/></div>
+				<div id="item_size">大小：<span>l</span><input class="l" type="number"/><span>w</span><input class="w" type="number"/><span>h</span><input class="h" type="number"/></div>
+				<div id="item_terrain">
+					地形：<div id="create_terrain">+</div>
+					<div>
+						類型：<select class="t_type"><option hidden selected value="0">--</option><option value="s">樓梯</option><option value="l">梯子</option><option value="w_block">牆壁(塊)</option><option value="w_flake">牆壁(片)</option></select>
+						方向：<select class="d"><option hidden selected value="-1">--</option><option value="0">東</option><option value="1">南</option><option value="2">西</option><option value="3">北</option></select>
+						<span>r</span><input class="r" type="number"/><span>c</span><input class="c" type="number"/><span>a</span><input class="a" type="number"/>
+					</div>
+					<div>
+						類型：<select class="t_type"><option hidden selected value="0">--</option><option value="s">樓梯</option><option value="l">梯子</option><option value="w_block">牆壁(塊)</option><option value="w_flake">牆壁(片)</option></select>
+						方向：<select class="d"><option hidden selected value="-1">--</option><option value="0">東</option><option value="1">南</option><option value="2">西</option><option value="3">北</option></select>
+						<span>r</span><input class="r" type="number"/><span>c</span><input class="c" type="number"/><span>a</span><input class="a" type="number"/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			var data = {};
+			var view_screen_terrain = {};
+			var player = {state:"idle", r:0, c:0, a:0};
+			var player_moving = false;
+			$(document).ready(() => {
+				$('[alt="www.000webhost.com"]').parents('div').remove();
+				set_default_value();
+				$('#screen_img input').change(set_screen_background);
+				$('#size input, #offset input').change(update_size_and_offset);
+				$('#screen_cid_limit input, #screen_role_limit input').change(update_limit);
+				
+				$('#create_item').click(create_item);
+				$('#items_input').on('click', '.delete_item', delete_item);
+				$('#items_input').on('click', '.sort_up', sort_up);
+				$('#items_input').on('click', '.sort_down', sort_down);
+				$('#items_input').on('click', 'div:not(#create_item)', read_item);
+				
+				$('#item_id input').change(change_item_id);
+				$('#item_img input, #item_img_origin input, #item_pos input, #item_size input').change(update_item_data);
+				$('#create_terrain').click(create_terrain);
+				
+				$('#item_terrain').on('click', '.delete_t', delete_terrain);
+				$('#item_terrain').on('change', '.t_type', change_terrain_type);
+				$('#item_terrain').on('change', '.d, input', change_item_terrain);
+				
+				$('#move_button div').click(oneself_move);
+				$('#climb').click(oneself_climb);
+				$('#sit_down').click(oneself_sit_down);
+				
+				$('#screen_upload').click(screen_upload);
+				$('#screen_download').click(screen_download);
+				$('#reset_player_pos').click(reset_player_pos);
+			});
+			
+			function reset_player_pos() {
+				player.r = 0; player.c = 0; player.a = 0;
+				$('#test_player').css(get_sq_pic_pos(player));
+				update_view_screen_item_imgs();
+			}
+			
+			function data_to_editor() {
+				$('#screen_name input').val(data.name);
+				$('#screen_img input').val(data.img);
+				$('#size .l').val(data.size.l);
+				$('#size .w').val(data.size.w);
+				$('#size .h').val(data.size.h);
+				$('#offset .r').val(data.offset.r);
+				$('#offset .c').val(data.offset.c);
+				$('#offset .a').val(data.offset.a);
+				if(data.allow) {
+					if(data.allow.players) $('#screen_cid_limit input').val(data.allow.players.join(' '));
+					if(data.allow.role) $('#screen_role_limit input').val(data.allow.role.join(' '));
+				}
+				$('#items_input :not(#create_item)').remove();
+				for(let item_name in data.items) {
+					let item = data.items[item_name];
+					if(!item.size) item.size = {l: 1, w: 1, h: 1};
+					if(!item.origin) item.origin = {left: 0, bottom: 0};
+					$('#items_input').append('<div data-n="' + item_name + '"><span class="delete_item">X</span><span class="sort_up">↑</span><span class="sort_down">↓</span>' + item_name + '</div>');
+				}
+				view_screen_terrain_update();
+				update_view_screen_item_imgs();
+			}
+			function screen_upload() {
+				if (!(window.File || window.FileReader || window.FileList || window.Blob))
+					{ alert('瀏覽器不支援讀取檔案功能，請換瀏覽器'); return; }
+				let upload = $('<input type="file"></input>');
+				upload.change(() => {
+					let reader = new FileReader();
+					reader.readAsText(upload.prop('files')[0], "UTF-8");
+					reader.onload = function() {
+						try {
+							let file_data = JSON.parse(this.result);
+							data = file_data;
+							if(!data.name) data.name = "未命名場景";
+							if(!data.img) data.img = "";
+							if(!data.offset) data.offset = {r: 0, c: 0, a: 0};
+							if(!data.items) data.items = {};
+							data_to_editor();
+							alert('成功讀取檔案。');
+						}
+						catch(e) {
+							alert('檔案錯誤無法讀取。');
+							console.log(e);
+						}
+					}
+				});
+				upload.click();
+			}
+			function screen_download() {
+				let download_data = JSON.parse(JSON.stringify(data));
+				if(JSON.stringify(download_data.items) == "{}") delete download_data.items;
+				if(download_data.offset.r == 0 && download_data.offset.c == 0 && download_data.offset.a == 0) delete download_data.offset;
+				for(let f in download_data.items) {
+					let item = download_data.items[f];
+					if(!item.type) item.type = "prop";
+					if(item.img == '') delete item.img;
+					if(item.size.l == 1 && item.size.w == 1 && item.size.h == 1) delete item.size;
+					if(item.origin.left == 0 && item.origin.bottom == 0) delete item.origin;
+					if(item.terrain) {
+						let w = item.terrain.length;
+						while(w--) if(!item.terrain[w].t) item.terrain.splice(w, 1);
+						if(item.terrain.length == 0) delete item.terrain;
+					}
+				}
+				
+				let blob = new Blob([JSON.stringify(download_data, null, '\t')], {type:'text/plain'});
+				let download = $('<a download="新場景"></a>')[0];
+				if (window.webkitURL != null) {
+					download.href = window.webkitURL.createObjectURL(blob);
+				} else {
+					download.href = window.URL.createObjectURL(blob);
+				}
+				download.click();
+			}
+			
+			function sort_up(e) {
+				let target = $(e.target).parent();
+				if(target.prev().length == 0) return;
+				target.prev().before(target);
+				update_view_screen_item_imgs();
+			}
+			function sort_down(e) {
+				let target = $(e.target).parent();
+				if(target.next().length == 0) return;
+				target.next().after(target);
+				update_view_screen_item_imgs();
+			}
+			
+			function update_view_screen_item_imgs() {
+				$('#screen :not(#test_player)').remove();
+				let sort = {};
+				let items_dom = $('#items_input :not(#create_item)');
+				for(let f=0; f<items_dom.length; f++) {
+					let name = items_dom.eq(f).attr('data-n');
+					sort[name] = data.items[name];
+				}
+				data.items = JSON.parse(JSON.stringify(sort));
+				let list = [{
+					oneself: 1,
+					pos: {r: player.r, c: player.c, a: player.a}
+				}];
+				for(let f in data.items) {
+					let item = data.items[f];
+					let list_item = {
+						img: item.img,
+						origin: item.origin,
+						pos: item.pos,
+						size: item.size
+					};
+					item_enter_screen(list, list_item);
+				}
+				for(let f in list) {
+					if(list[f].oneself) {$('#test_player').appendTo('#screen'); continue;}
+					let img = $('<div></div>').css(list[f].origin);
+					if(list[f].img) img.css('content', 'url(' + list[f].img + ')');
+					$('<div class="item_sq"></div>').append(img)
+					.css(get_sq_pic_pos(list[f].pos))
+					.appendTo('#screen');
+				}
+			}
+			function item_enter_screen(list, item) {
+				let cur_index = 0;
+				while(cur_index < list.length) {
+					if(!compare_layer_value(item, list[cur_index])) break;
+					cur_index++;
+				}
+				list.splice(cur_index, 0, item);
+			}
+			function compare_layer_value(sq_a, sq_b) {
+				if(sq_a.pos.r == sq_b.pos.r && sq_a.pos.c == sq_b.pos.c && sq_a.pos.a == sq_b.pos.a) {
+					if(sq_a.oneself) return true;
+					else return false;
+				}
+				let a = get_point_and_size(sq_a);
+				let b = get_point_and_size(sq_b);
+				if(a.min[2] > b.max[2]) return true;
+				if(b.min[2] > a.max[2]) return false;
+				let a_yesno = a.max[0] > b.min[0] && a.max[1] > b.min[1] && a.max[2] > b.min[2];
+				let b_yesno = b.max[0] > a.min[0] && b.max[1] > a.min[1] && b.max[2] > a.min[2];
+				if (a_yesno && b_yesno) {
+					let da_p = [a.max[0] - b.min[0], a.max[1] - b.min[1], a.max[2] - b.min[2]];
+					let db_p = [b.max[0] - a.min[0], b.max[1] - a.min[1], b.max[2] - a.min[2]];
+					let dp_p = [
+						a.size[0] + b.size[0] - Math.abs(da_p[0] - db_p[0]),
+						a.size[1] + b.size[1] - Math.abs(da_p[1] - db_p[1]),
+						a.size[2] + b.size[2] - Math.abs(da_p[2] - db_p[2])
+					];
+					if (dp_p[0] <= dp_p[1] && dp_p[0] <= dp_p[2]) return da_p[0] >= db_p[0];
+					else if (dp_p[1] <= dp_p[0] && dp_p[1] <= dp_p[2]) return da_p[1] >= db_p[1];
+					else return da_p[2] > db_p[2];
+				}
+				return a_yesno;
+				function get_point_and_size(sq) {
+					if(sq.oneself)
+						return {
+							min: [sq.pos.r - 0.6, sq.pos.c - 0.6, sq.pos.a - 0.3],
+							max: [sq.pos.r + 0.6, sq.pos.c + 0.6, sq.pos.a + 0.9],
+							size: [1.2, 1.2, 1.2]
+						};
+					else
+						return {
+							min: [ sq.pos.r + 0.5 - sq.size.l, sq.pos.c + 0.5 - sq.size.w, sq.pos.a - 0.5 ],
+							max: [ sq.pos.r + 0.5 , sq.pos.c + 0.5, sq.pos.a - 0.5 + sq.size.h ],
+							size: [ sq.size.l, sq.size.w, sq.size.h ]
+						};
+				}
+			}
+			
+			function check_wall(r, c, a, d) {
+				let pos_str = [r, c, a].join('_');
+				if(view_screen_terrain[pos_str] === undefined) return false;
+				if(view_screen_terrain[pos_str] === 1 || view_screen_terrain[pos_str]['w' + d]) return true;
+				return false;
+			}
+			function check_stair(target_pos, d) {
+				let pos_str = [target_pos.r, target_pos.c, target_pos.a].join('_');
+				if(view_screen_terrain[pos_str] && view_screen_terrain[pos_str]['s' + d]) {target_pos.a++; return;}
+				
+				pos_str = [player.r, player.c, player.a - 1].join('_');
+				if(view_screen_terrain[pos_str] && view_screen_terrain[pos_str]['s' + ((d + 2) % 4)]) target_pos.a--;
+			}
+			function check_climb(r, c, a) {
+				let pos_str = [r, c, a].join('_');
+				if(view_screen_terrain[pos_str] && view_screen_terrain[pos_str].l) return view_screen_terrain[pos_str].l;
+				return null;
+			}
+			function check_chair(r, c, a) {
+				let pos_str = [r, c, a].join('_');
+				if(view_screen_terrain[pos_str] && view_screen_terrain[pos_str].c) return true;
+				return false;
+			}
+			
+			function oneself_sit_down() {
+				/*檢查當前格*/
+				if(check_chair(player.r, player.c, player.a))
+					$('#test_player').css('background', 'url(https://imgur.com/f7Pygy8.png)');
+				else $('#test_player').css('background', 'url(https://imgur.com/ahDtOXj.png)');
+			}
+			function oneself_climb() {
+				if(player_moving) return;
+				player_moving = true;
+				$('#test_player').css('background', '');
+				
+				/*檢查當前格*/
+				let ladder = check_climb(player.r, player.c, player.a);
+				if(!ladder) {player_moving = false; return;}
+				
+				/*設定目標格*/
+				let target_pos = {r: player.r, c: player.c, a: player.a + ladder.lh};
+				
+				/*執行移動*/
+				test_player_move(target_pos, Math.abs(ladder.lh), () => { player_moving = false; });
+			}
+			function oneself_move(e) {
+				let direction = +$(e.target).attr('data-d');
+				if(player_moving) return;
+				player_moving = true;
+				$('#test_player').css('background', '');
+				
+				/*檢查當前格*/
+				if(check_wall(player.r, player.c, player.a, direction)) {player_moving = false; return;}
+				
+				/*設定目標格*/
+				let target_pos = {
+					r: player.r + (direction==1) - (direction==3),
+					c: player.c + (direction==0) - (direction==2),
+					a: player.a
+				};
+				direction = (direction + 2) % 4;
+				
+				/*檢查是否有樓梯（a會發生改變）*/
+				check_stair(target_pos, direction);
+				
+				/*檢查目標格牆壁*/
+				if(check_wall(target_pos.r, target_pos.c, target_pos.a, direction)) {player_moving = false; return;}
+				
+				/*執行移動*/
+				test_player_move(target_pos, 1, () => { player_moving = false; });
+			}
+			function test_player_move(target_pos, cellcount, done_move) {
+				let index_before_change = false;
+				let index_after_change = false;
+				
+				if(player.r == target_pos.r && player.c == target_pos.c) {
+					if(target_pos.a > player.a) index_after_change = true;
+					else index_before_change = true;
+				}
+				else {
+					if(player.r > target_pos.r || player.c > target_pos.c) index_after_change = true;
+					else index_before_change = true;
+				}
+				
+				player.r = target_pos.r;
+				player.c = target_pos.c;
+				player.a = target_pos.a;
+				if(index_before_change) update_view_screen_item_imgs();
+				$('#test_player').animate(get_sq_pic_pos(player), 500 * (cellcount || 1), () => {
+					if(index_after_change) update_view_screen_item_imgs();
+					if(done_move) done_move();
+				});
+			}
+			
+			function view_screen_terrain_update() {
+				view_screen_terrain = {};
+				for(let f in data.items) {
+					let item = data.items[f];
+					if(item.terrain)
+						for(let t_data of item.terrain) {
+							let pos = [
+								item.pos.r - item.size.l + 1 + t_data.pos.r,
+								item.pos.c - item.size.w + 1 + t_data.pos.c,
+								item.pos.a - item.size.h + 1 + t_data.pos.a
+							];
+							let pos_str = pos.join("_");
+							screen_terrain_append(pos_str, t_data.t);
+							if(t_data.t && t_data.t.l) {
+								let pos_str2 = [pos[0], pos[1], pos[2] + t_data.t.l.lh].join("_");
+								let t2 = JSON.parse(JSON.stringify(t_data.t));
+								t2.l.lh *= -1;
+								screen_terrain_append(pos_str2, t2);
+							}
+						}
+				}
+				function screen_terrain_append(pos_str, t) {
+					if(!view_screen_terrain[pos_str] || t === 1) {view_screen_terrain[pos_str] = JSON.parse(JSON.stringify(t)); return;}
+					for(let f in t) view_screen_terrain[pos_str][f] = t[f];
+				}
+			}
+			
+			function change_item_terrain(e) {
+				let target = $(e.target).parent();
+				if(target.prop('tagName').toLowerCase() == 'span') target = target.parent();
+				update_item_terrain(target.index() - 1);
+			}
+			
+			function update_item_terrain(index) {
+				let name = $('#item_id').attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				let t_data = data.items[name].terrain[index];
+				let t_dom = $('#item_terrain div:not(#create_terrain)').eq(index);
+				switch(t_dom.find('.t_type').val()) {
+					case '0':
+						t_data.t = 0; break;
+					case 'w_block':
+						t_data.t = 1; break;
+					case 'c':
+						t_data.t = {c: 0}; break;
+					case 's':
+						t_data.t = {}; t_data.t['s' + t_dom.find('.d').val()] = 1; break;
+					case 'l': {
+						t_data.t = {}; t_data.t.l = {
+							d: +t_dom.find('.d').val(),
+							lh: +t_dom.find('.lh').val()
+						}; break;
+					}
+					case 'w_flake':
+						t_data.t = {}; t_data.t['w' + t_dom.find('.d').val()] = 1; break;
+				}
+				t_data.pos.r = +t_dom.find('.r').val();
+				t_data.pos.c = +t_dom.find('.c').val();
+				t_data.pos.a = +t_dom.find('.a').val();
+				view_screen_terrain_update();
+			}
+			
+			function change_terrain_type(e) {
+				let name = $('#item_id').attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				let t = $(e.target).parent();
+				let d = t.find('.d');
+				switch($(e.target).val()) {
+					case '0': case 'c': case 'w_block': {
+						d.val(-1);
+						t.find('.d_span').css('display', 'none');
+						break;
+					}
+					case 's': case 'l': case 'w_flake': {
+						t.find('.d_span').attr('style', null);
+						break;
+					}
+				}
+				if($(e.target).val() == 'l') t.find('.lh_span').attr('style', null);
+				else t.find('.lh_span').css('display', 'none');
+				update_item_terrain($(e.target).parent().index() - 1);
+			}
+			function delete_terrain(e) {
+				let name = $('#item_id').attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				let index = $(e.target).parent().index() - 1;
+				data.items[name].terrain.splice(index, 1);
+				$(e.target).parent().remove();
+				view_screen_terrain_update();
+			}
+			function create_terrain() {
+				let name = $('#item_id').attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				let t = create_terrain_dom();
+				t.find('input:not(.lh)').val(0);
+				t.find('.lh').val(1);
+				t.appendTo('#item_terrain');
+				data.items[name].terrain[t.index()-1] = {pos: {r: 0, c: 0, a: 0}};
+			}
+			function create_terrain_dom() {
+				return $('<div><span class="delete_t">X</span>' +
+					'類型：<select class="t_type"><option hidden selected value="0">--</option><option value="c">椅子</option><option value="s">樓梯</option><option value="l">梯子</option><option value="w_block">牆壁(塊)</option><option value="w_flake">牆壁(片)</option></select>' +
+					'<span class="d_span" style="display:none">方向：<select class="d"><option hidden selected value="-1">--</option><option value="0">東</option><option value="1">南</option><option value="2">西</option><option value="3">北</option></select></span>' +
+					'<span class="lh_span" style="display:none">樓梯長度：<input class="lh" type="number"></span>' +
+					'<span>r</span><input class="r" type="number"><span>c</span><input class="c" type="number"><span>a</span><input class="a" type="number">' +
+				'</div>');
+			}
+			
+			function clear_item_input() {
+				$('#item_id').attr('data-n', null);
+				$('#item_input input').val('').attr('disabled', '');
+				$('#item_terrain div:not(#create_terrain)').remove();
+			}
+			function read_item(e) {
+				let target = $(e.target);
+				if(target.prop('tagName').toLowerCase() == 'span') return;
+				$('#items_input .selected').attr('class', null);
+				let name = target.attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				else {
+					$('#item_input input').attr('disabled', null);
+					target.addClass('selected');
+				}
+				$('#item_id input').val(name);
+				$('#item_id').attr('data-n', name);
+				let item_data = data.items[name];
+				$('#item_img input').val(item_data.img);
+				$('#item_img_origin .left').val(item_data.origin.left);
+				$('#item_img_origin .bottom').val(item_data.origin.bottom);
+				$('#item_pos .r').val(item_data.pos.r);
+				$('#item_pos .c').val(item_data.pos.c);
+				$('#item_pos .a').val(item_data.pos.a);
+				$('#item_size .l').val(item_data.size.l);
+				$('#item_size .w').val(item_data.size.w);
+				$('#item_size .h').val(item_data.size.h);
+				$('#item_terrain div:not(#create_terrain)').remove();
+				for(let f in item_data.terrain) {
+					let t_data = item_data.terrain[f];
+					let t = create_terrain_dom();
+					t.find('.r').val(t_data.pos.r);
+					t.find('.c').val(t_data.pos.c);
+					t.find('.a').val(t_data.pos.a);
+					t.find('.lh').val(1);
+					
+					if(t_data.t === 1) t.find('.t_type').val('w_block');
+					else if(t_data.t && t_data.t.c) t.find('.t_type').val('c');
+					else if(t_data.t && t_data.t.l) {
+						t.find('.t_type').val('l');
+						t.find('.d').val(t_data.t.l.d);
+						t.find('.lh').val(t_data.t.l.lh);
+						t.find('.d_span').attr('style', null);
+						t.find('.lh_span').attr('style', null);
+					}
+					else for(let key in t_data.t) {
+						switch(key.substr(0, 1)) {
+							case 's': t.find('.t_type').val('s'); break;
+							case 'w': t.find('.t_type').val('w_flake'); break;
+						}
+						t.find('.d').val(key.substr(1));
+						t.find('.d_span').attr('style', null);
+					}
+					t.appendTo('#item_terrain');
+				}
+			}
+			
+			function change_item_id() {
+				let name = $('#item_id').attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				let new_name = $('#item_id input').val();
+				if(data.items[new_name]) { alert('名稱不可重複。'); return; }
+				data.items[new_name] = data.items[name];
+				delete data.items[name];
+				$('#item_id').attr('data-n', new_name);
+				$('#items_input [data-n="' + name + '"]').attr('data-n', new_name).html('<span class="delete_item">X</span><span class="sort_up">↑</span><span class="sort_down">↓</span>' + new_name);
+			}
+			function update_item_data() {
+				let name = $('#item_id').attr('data-n');
+				if(!data.items[name]) { alert('找不到物件。'); clear_item_input(); return; }
+				data.items[name].img = $('#item_img input').val();
+				data.items[name].origin.left = +$('#item_img_origin .left').val();
+				data.items[name].origin.bottom = +$('#item_img_origin .bottom').val();
+				
+				data.items[name].pos.r = +$('#item_pos .r').val();
+				data.items[name].pos.c = +$('#item_pos .c').val();
+				data.items[name].pos.a = +$('#item_pos .a').val();
+				
+				data.items[name].size.l = +$('#item_size .l').val();
+				data.items[name].size.w = +$('#item_size .w').val();
+				data.items[name].size.h = +$('#item_size .h').val();
+				
+				view_screen_terrain_update();
+				update_view_screen_item_imgs();
+			}
+			
+			function delete_item(e) {
+				let target = $(e.target).parent();
+				let name = target.attr('data-n');
+				delete data.items[name];
+				target.remove();
+				clear_item_input();
+				view_screen_terrain_update();
+				update_view_screen_item_imgs();
+			}
+			function create_item() {
+				let index = 1;
+				while($('#items_input [data-n="未命名' + index + '"]').length) index++;
+				let name = '未命名' + index;
+				$('#items_input').append('<div data-n="' + name + '"><span class="delete_item">X</span><span class="sort_up">↑</span><span class="sort_down">↓</span>' + name + '</div>');
+				data.items[name] = {
+					origin: {left: 0, bottom: 0},
+					pos: {r: 0, c: 0, a: 0},
+					size: {l: 1, w: 1, h: 1},
+					terrain: []
+				};
+				update_view_screen_item_imgs();
+			}
+			function set_default_value() {
+				$('#screen_name input').val('未命名場景');
+				data.name = $('#screen_name input').val();
+				
+				$('#screen_img input').val('https://imgur.com/OdF4BG0.png');
+				set_screen_background();
+				
+				$('#size .l, #size .w').val(4);
+				$('#size .h').val(3);
+				$('#offset input').val(0);
+				update_size_and_offset();
+				update_limit();
+				
+				clear_item_input();
+				
+				$('#test_player').css(get_sq_pic_pos(player));
+				data.items = {"邊界1":{pos:{r:0,c:0,a:0},terrain:[
+					{pos:{r:-1,c: 0,a: 0},t:1}, {pos:{r:-1,c: 1,a: 0},t:1}, {pos:{r:-1,c: 2,a: 0},t:1}, {pos:{r:-1,c: 3,a: 0},t:1},
+					{pos:{r: 0,c:-1,a: 0},t:1}, {pos:{r: 1,c:-1,a: 0},t:1}, {pos:{r: 2,c:-1,a: 0},t:1}, {pos:{r: 3,c:-1,a: 0},t:1},
+					{pos:{r: 4,c: 0,a: 0},t:1}, {pos:{r: 4,c: 1,a: 0},t:1}, {pos:{r: 4,c: 2,a: 0},t:1}, {pos:{r: 4,c: 3,a: 0},t:1},
+					{pos:{r: 0,c: 4,a: 0},t:1}, {pos:{r: 1,c: 4,a: 0},t:1}, {pos:{r: 2,c: 4,a: 0},t:1}, {pos:{r: 3,c: 4,a: 0},t:1}
+				]},"邊界2":{pos:{r:0,c:0,a:0},terrain:[
+					{pos:{r: 1,c: 0,a: 1},t:1}, {pos:{r: 2,c:-1,a: 1},t:1}, {pos:{r: 2,c: 1,a: 1},t:1}, {pos:{r: 3,c:-1,a: 1},t:1}, {pos:{r: 3,c: 1,a: 1},t:1}, {pos:{r: 4,c: 0,a: 1},t:1}
+				]},"樓梯1":{img:"https://i.imgur.com/w2xrk9X.png.png",pos:{r:3,c:0,a:0},terrain:[{pos:{r:0,c:0,a:0},t:{s0:1}},{pos:{r:0,c:0,a:0},t:{w3:1}}]},"梯子1":{img:"https://imgur.com/ncxrfJK.png",pos:{r:2,c:0,a:0},origin:{left:0,bottom:31},terrain:[{pos:{r:0,c:0,a:0},t:{l:{d:2, lh:1}}}]},"椅子1":{img:"https://imgur.com/ceoDXkp.png",pos:{r:0,c:1,a:0},terrain:[{pos:{r:0,c:0,a:0},t:{c:1}}]}};
+				data_to_editor();
+			}
+			function get_sq_pic_pos(sq_pos) {
+				let pos = {
+					bottom: ((data.size.l - 1 - sq_pos.r) + (data.size.w - 1 - sq_pos.c)) * 31 + sq_pos.a * 72,
+					left: ((data.size.l - 1 - sq_pos.r) + sq_pos.c) * 63
+				};
+				pos.bottom += (data.offset.r + data.offset.c) * -31 + data.offset.a * 72;
+				pos.left += (data.offset.r - data.offset.c) * 63;
+				return pos;
+			}
+			function update_limit() {
+				if(!$('#screen_cid_limit input').val().replace(/\s/g, '') && !$('#screen_role_limit input').val().replace(/\s/g, '')) {
+					delete data.allow;
+					return;
+				}
+				if(!data.allow) data.allow = {};
+				let w = 0;
+				
+				let cids = $('#screen_cid_limit input').val().split(' ');
+				w = cids.length; while(w--) if(!cids[w]) cids.splice(w, 1);
+				if(cids.length > 0) data.allow.players = cids;
+				else delete data.allow.players
+				
+				let roles = $('#screen_role_limit input').val().split(' ');
+				w = roles.length; while(w--) if(!roles[w]) roles.splice(w, 1);
+				if(roles.length > 0) data.allow.role = roles;
+			}
+			function update_size_and_offset() {
+				data.size = {
+					l: +$('#size .l').val(),
+					w: +$('#size .w').val(),
+					h: +$('#size .h').val()
+				};
+				data.offset = {
+					r: +$('#offset .r').val(),
+					c: +$('#offset .c').val(),
+					a: +$('#offset .a').val()
+				};
+				view_screen_terrain_update();
+				$('#test_player').css(get_sq_pic_pos(player));
+				update_view_screen_item_imgs();
+			}
+			function set_screen_background() {
+				let url = $('#screen_img input').val();
+				let image = new Image();
+				image.onload = (e) => {
+					let img = e.path[0];
+					$('#screen').css({
+						background: 'url(' + url + ')',
+						width: img.width,
+						height: img.height
+					});
+					data.img = url;
+				};
+				image.onerror = () => {
+					alert('背景圖片讀取失敗');
+					$('#screen').css({background: 'url(https://imgur.com/OdF4BG0.png)', width: 505, height: 465});
+					$('#screen_img input').val('https://imgur.com/OdF4BG0.png');
+				};
+				image.src = url;
+			}
+		</script>
+	</body>
+</html>
