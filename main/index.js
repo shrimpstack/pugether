@@ -13,5 +13,6 @@ window.Pugether = (() => {
       return;
     }
   }
+  PGT_open();
   return { close: PGT_close };
 })();
