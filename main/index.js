@@ -11,14 +11,16 @@ import * as View from './View.js';
     document.getElementById('pugether').remove();
     return;
   }
-  window.Pugether = { close: PGT_close };
-  function PGT_close() {
-    $('#pugether').remove();
-    delete window.Pugether;
-  }
+  window.Pugether = { close: shutdown };
   startup();
 })()
 
+function shutdown() {
+  $('#pugether').remove();
+  View.remove();
+  delete window.Pugether;
+}
+
 function startup() {
-  View.init();
+  View.create();
 }
