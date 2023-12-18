@@ -1,4 +1,4 @@
-@import "./test.css";
+@import "https://shrimpstack.github.io/pugether/main/css/test.css";
 
 #profile_pic {
   filter: invert(1);
