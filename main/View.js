@@ -5,10 +5,8 @@ let win_right = null;
 
 export function create() {
   root = $('<div id="pugether_window">').appendTo('#layout_content');
-  root.append('<link>', {
-    rel: "stylesheet",
-    href: "https://shrimpstack.github.io/pugether/main/css/main.css?time=" + new Date().getTime(),
-  });
+  let css_url = "https://shrimpstack.github.io/pugether/main/css/main.css?time=" + new Date().getTime();
+  root.append(`<link rel="stylesheet" href="${css_url}">`);
   win_center = $('<div class="win_center">').appendTo(root);
   win_left = $('<div class="win_left">').appendTo(root);
   win_right = $('<div class="win_right">').appendTo(root);
